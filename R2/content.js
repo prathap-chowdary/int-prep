@@ -838,16 +838,6 @@ This helps avoid rework and ensures everyone has the same understanding.`,
             children: [],
           },
           {
-            q: `What is Azure DevOps used for?`,
-            a: ` Azure DevOps is an ALM (Application Lifecycle Management.) platform that helps manage the complete software development lifecycle.<br> In our project we use : <br><li> Azure Boards to manage user stories, tasks, and bugs</li><li> Azure Repos provides Git-based version control, and Azure Pipelines handles our CI/CD deployments.</li> In my role, I primarily work with Azure Repos by creating feature branches, committing code, and raising Pull Requests for review before merging into the target branch`,
-            children: [],
-          },
-          {
-            q: `Have you deployed your pipelines?`,
-            a: ` Yes. We use Azure DevOps-based CI/CD pipelines for deployments. My responsibility is to raise pull requests, complete code reviews, resolve comments and support deployment activities while the release process is handled through the pipeline.`,
-            children: [],
-          },
-          {
             q: `What is SDLC`,
             a: ` SDLC stands for Software Development Life Cycle.it is the structured process used to develop software. It consists of Planning, Analysis, Design, Development, Testing, Acceptance, and Maintenance to ensure software is delivered with quality and meets business requirements.`,
             children: [],
@@ -857,11 +847,21 @@ This helps avoid rework and ensures everyone has the same understanding.`,
             a: ` The common approaches are Waterfall and Agile. In modern projects, Agile is often combined with DevOps practices, where Agile manages the development process and DevOps automates building, testing, deployment, and operations through CI/CD`,
             children: [],
           },
-          {
+           {
             q: `Difference between Waterfall, Agile, and DevOps?`,
             a: ` Waterfall follows a sequential approach with fixed requirements. Agile develops software in short iterations with continuous customer feedback, while DevOps extends Agile by automating build, testing, deployment, and monitoring to enable faster and more frequent releases.`,
             children: [],
           },
+          {
+            q: `What is Azure DevOps used for?`,
+            a: ` Azure DevOps is an ALM (Application Lifecycle Management.) platform that helps manage the complete software development lifecycle.<br> In our project we use : <br><li> Azure Boards to manage user stories, tasks, and bugs</li><li> Azure Repos provides Git-based version control, and Azure Pipelines handles our CI/CD deployments.</li> In my role, I primarily work with Azure Repos by creating feature branches, committing code, and raising Pull Requests for review before merging into the target branch`,
+            children: [],
+          },
+          {
+            q: `Have you deployed your pipelines?`,
+            a: ` Yes. We use Azure DevOps-based CI/CD pipelines for deployments. My responsibility is to raise pull requests, complete code reviews, resolve comments and support deployment activities while the release process is handled through the pipeline.`,
+            children: [],
+          },  
           {
             q: `which development methodology is used in your project`,
             a: ` We followed Agile using the Scrum framework with two-week sprints. `,
@@ -890,17 +890,17 @@ Along with Azure DevOps, I maintain a personal task list to prioritize developme
 
       },
       {
-        q: `How do you work with your team?`,
-        a: ` 
-      We followed Agile using the Scrum framework with two-week sprints, with daily stand-ups, sprint planning, reviews, and retrospectives. I discuss progress, raise blockers early, participate in code reviews, and collaborate with teammates to ensure timely delivery
-        `,
+        q: `Is there any daily Scrum call? Who leads that?`,
+        a: `Yes. We have a daily Scrum meeting every working day, usually for about 15 minutes. It is led by the Scrum Master. During the meeting, each team member shares what they completed yesterday, what they're working on today, and whether they have any blockers`,
         children: [],
       },
       {
-        q: `How do you coordinate with your Team Lead?`,
+        q: `How do you work with your team? / TL`,
         a: ` 
-        We follow an Agile Scrum process. I coordinate with the Scrum Master during sprint planning, daily stand-ups, and backlog discussions to provide updates on my tasks, dependencies, and any blockers. <br>
-        For technical decisions, requirement clarifications, and code reviews, I work closely with my Team Lead. I also communicate proactively if I foresee any risks or delays so we can address them early and keep the sprint on track.
+      We followed Agile using the Scrum framework with two-week sprints, with daily stand-ups, sprint planning, reviews, and retrospectives.
+      <br>  <span style="color:Violet;"><b>Team- </b></span>  I discuss progress, raise blockers early, participate in code reviews, and collaborate with teammates to ensure timely delivery
+      <br> <span style="color:Violet;"><b>Lead- </b></span>          For technical decisions, requirement clarifications, and code reviews, I work closely with my Team Lead. I also communicate proactively if I foresee any risks or delays so we can address them early and keep the sprint on track.
+
         `,
         children: [],
       },
@@ -925,7 +925,7 @@ Along with Azure DevOps, I maintain a personal task list to prioritize developme
       },
       {
         q: `how many members in your team`,
-        a: ` Our core development team consisted of 6 members—4 Data Engineers, including me, 1 Technical Lead, and 1 Scrum Master. We worked collaboratively during each sprint. The Technical Lead provided technical guidance and reviewed our code, while the Scrum Master facilitated sprint planning, daily stand-ups <br> 💠 <b>DOn't mention but remember:</b> Business Analyst were part of the larger project team`,
+        a: ` Our core development team consisted of 6 members—4 Data Engineers, including me, 1 Technical Lead, and 1 Scrum Master. We worked collaboratively during each sprint. The Technical Lead provided technical guidance and reviewes our code, while the Scrum Master facilitated sprint planning, daily stand-ups <br> 💠 <b>DOn't mention but remember:</b> Business Analyst were part of the larger project team`,
         children: [
 
           {
@@ -959,26 +959,11 @@ Along with Azure DevOps, I maintain a personal task list to prioritize developme
         children: [],
       },
       {
-        q: `--- Is there any daily Scrum call? Who leads that?`,
-        a: `Yes. We have a daily Scrum meeting every working day, usually for about 15 minutes. It is led by the Scrum Master. During the meeting, each team member shares what they completed yesterday, what they're working on today, and whether they have any blockers`,
-        children: [],
-      },
-      {
         q: `Do you prefer individual work or team work? <span style="color:green;"><b>Q25</b></span>`,
         a: ` 
         I'm comfortable working both independently and as part of a team <br>
         Individual work helps me focus on development tasks,debugging, while teamwork is valuable for design discussions, code reviews, knowledge sharing, and resolving issues faster as different perspectives catch gaps you'd miss alone.
         <br> In my current project, most development happens collaboratively, so I enjoy working with  team while also taking ownership of my assigned tasks`,
-        children: [],
-      },
-      {
-        q: `How do you perform code reviews?`,
-        a: `
-        When reviewing someone's code, I look at a few things — first, correctness: does the logic actually solve the requirement, are edge cases handled, are there any null or duplicate risks. <br>
-        Then performance: are there unnecessary shuffles, is the partitioning strategy sensible, any broadcast join opportunities being missed <br>
-        I also check for hardcoded values, proper use of Delta Lake operations like MERGE versus overwrite, and whether the transformation is idempotent.<br>
-        Finally readability — is the code clean, well-commented, and easy for someone else to maintain. I try to give specific, actionable comments rather than just flagging something as wrong — I explain why and suggest an alternative
-        `,
         children: [],
       },
       {
@@ -1004,14 +989,6 @@ Along with Azure DevOps, I maintain a personal task list to prioritize developme
         . If the delay could affect the sprint or delivery, I communicate it early to the Team Lead or Scrum Master so the team can replan if needed <br>
         The priority is to keep the project on track while supporting the teammate."
         `,
-        children: [],
-      },
-      {
-        q: `What if the business changes the requirement after development?`,
-        a: ` Requirement changes are common in Agile projects.  . First I'd assess the impact — how much of what's already built needs to change, does it affect other layers or downstream consumers, and what's the timeline. <br>
-        Then I discuss the updated requirement with the Business Analyst, Team Lead, or Scrum Master to ensure everyone has the same understanding before making any changes.<br>
-        If the change significantly affects the sprint scope, I communicate it early so the work can be reprioritized. <br>
-        Once aligned, I implement the changes, perform thorough testing and data validation, and ensure the updated solution meets the new business requirement without affecting existing functionality."`,
         children: [],
       },
       {
