@@ -562,12 +562,50 @@ In the <span style="color:Violet;"><b>  Query Profile or Spark UI</b></span>  , 
   },
   {
     cat: `Optimizations`,
-    q: `steps for SHuffle/join Optimization`,
-    answer: `
+    q: `SHuffle/join  & Optimization`,
+    answer:``,
+    children:[,
+    {
+      q:`How spark choose join strategy`,
+      a:` Spark picks join strategy based on data size, configuration, and available statistics: 
+      <ul>
+        <li>
+               <span style="color:Violet;"><b>  Broadcast Hash Join (BHJ)  </b></span> → First Spark checks When one side is small enough to broadcast below autoBroadcastJoinThreshold (default 10MB).This will Avoids shuffling the large table and is usually the fastest option. 
+
+        </li>
+        <li>
+         <span style="color:Violet;"><b>  Sort Merge Join (SMJ) </b></span>  → Common/default choice for large-to-large joins. Both sides are shuffled by join key and sorted, then merged.
+
+        </li>
+        <li>
+         <span style="color:Violet;"><b> Shuffle Hash Join (SHJ) </b></span>  →  if SMJ disabled , both sides require shuffle and   smaller side can fits in memory .then Spark builds a hash table from the smaller side.
+
+        </li>
+        <li>  <span style="color:Violet;"><b>  AQE </b></span> → Can dynamically change the strategy at runtime based on actual data characteristics. If one side can fit in memory then chooses SHJ instead of SMJ
+</li>
+        </ul>
+<hr>
+WHY SMJ is default
+<ul>
+        <li> <span style="color:Violet;"><b>  Sort Merge Join (SMJ) </b></span> is generally safer and more scalable because sorting can spill to disk when memory is insufficient.
+        </li>
+        <li>
+       <span style="color:Violet;"><b> Shuffle Hash Join (SHJ) </b></span>: Entire build-side partition must fit in memory as a hash table. unexpectedly large/skewed partitions can create memory pressure or failure. <br><b>EXAMPLE</b> Spark estimates build side = 4GB, actual after shuffle = 12GB → OOM at 2AM → job fails. 
+        </li>
+        <li>  <span style="color:Violet;"><b> KEY PRINCIPLE: </b></span> In production you can tolerate slower performance but cannot tolerate failed pipelines. SMJ is the right default for a general-purpose distributed compute engine. AQE gives best of both — starts with safe SMJ, optimizes to faster strategies when runtime conditions allow.</li>
+        </ul>
+      
+      `,
+      children:[],
+    },
+      {
+      q:`how do you optimize joins/shuffle`,
+    a: `
   I will start with
   <ul>
   <li>
-    <span style="color:#1F4E79;"><b>Choosing the right join strategy.</b></span>
+    <span style="color:#1F4E79;"><b>broadcast </b></span>
+
     If one table is small (default <b>≤ 10 MB</b>, configurable via
     <code>spark.sql.autoBroadcastJoinThreshold</code>), use a
     <b>Broadcast Join</b> to eliminate shuffle. If required, force it using the
@@ -575,11 +613,13 @@ In the <span style="color:Violet;"><b>  Query Profile or Spark UI</b></span>  , 
   </li>
 
   <li>
-    <span style="color:#1F4E79;"><b>Reduce data before the join.</b></span>
-    Apply filters as early as possible and select only the required columns to
+    <span style="color:#1F4E79;"><b>Filter data before the join.</b></span>
+    Apply filters as early as possible to
     minimize the amount of data shuffled across the cluster.
   </li>
-
+<li>
+<span style="color:#1F4E79;"><b>Select only req cols</b></span> Reduce data transferred during shuffle.
+</li>
   <li>
     <span style="color:#1F4E79;"><b>Keep Delta tables optimized.</b></span>
     Run <b>OPTIMIZE</b> to compact small files and <b>Z-ORDER</b> on frequently
@@ -588,10 +628,7 @@ In the <span style="color:Violet;"><b>  Query Profile or Spark UI</b></span>  , 
   </li>
 
   <li>
-    <span style="color:#1F4E79;"><b>Repartition large tables carefully.</b></span>
-    Repartition on the join key only when redistribution is required to balance
-    partitions and reduce skew. Since <code>repartition()</code> performs a full
-    shuffle, use it only when redistribution is necessary..
+  <span style="color:#1F4E79;"><b>cache the reused Df</b></span> → Useful when the same expensive DataFrame is reused multiple times; don't cache everything.
   </li>
 
   <li>
@@ -620,6 +657,8 @@ In the <span style="color:Violet;"><b>  Query Profile or Spark UI</b></span>  , 
 </ul>
   `,
     children: []
+  },
+],
   },
   ////////////////////////////////////////////////////////////////////////////////
 
