@@ -1,3 +1,9 @@
+---
+layout: default
+title: Sources
+permalink: /datasources&formats/
+---
+
 # Sources, File Formats & Ingetion — Notes
 
 ---
