@@ -1,4 +1,4 @@
-const cats = ["Sources", "Read", "write", "spark", "DBX", "Optimizations"];
+const cats = ["Sources", "Read", "write", "spark", "DBX", "Optimizations", "Differences"];
 const qs = [
   // * <pre><code class="language-python">
   // df.filter(col("status") == "A")
@@ -71,7 +71,9 @@ parallelize().toDF() is the old RDD-based path. You manually create an RDD first
 </code> Default is 128 mb
 
 <br>💠A large file may be split into multiple input partitions, while multiple small files may be combined into fewer partitions to reduce overhead.
-<br> 💠 These Spark partitions are independent of database table partitions where they are used for primarily data prining()data skipping
+<br> 💠 These Spark partitions are independent of database table partitions where they are used for primarily data prining()data skipping<br>
+____________________________________________________
+<img src="../support/docs/Readpartitions&Shufflepartitions.png" alt="Image" style="max-width: 100%; height: auto;">
 `,
     children: [
       {
@@ -85,13 +87,66 @@ parallelize().toDF() is the old RDD-based path. You manually create an RDD first
   ////////////////////////////////////////////////////////////////////////////////
   {
     cat: `Read`,
-    q: `what does inferschema do while reading files`,
-    answer: `💠By default, when Spark reads a CSV file, all columns are treated as strings.<br>
+    q: `Schema changes while Read`,
+    answer: ``,
+    children: [
+      {
+        q: ` HOw do you read multiple csv,json,parquet files `,
+        a: `
+When reading multiple files, the approach depends on the format and whether schemas are consistent across files.
+      <ol>
+        <li>
+ <span style="color:Violet;"><b>  For CSV and JSON </b></span> both are schema-less, so wildcard reads with inferSchema are unreliable in production. inferSchema samples only a subset of files — fields present in later files get missed, type inconsistencies go undetected.
+ <ul><li>My default is define the target schema explicitly, read each file individually against it, normalize, then union using unionByName with allowMissingColumns=True — columns matched by name not position, missing columns fill as null.</li>
+ <li> CSV has an additional positional risk — Spark reads columns by order not name, so a silent column order change across files corrupts data without any error. </li>
+ <li> JSON doesn't have this since it's key-name based, but missing keys and nested field inconsistencies are still a real risk without explicit schema. </li></ul>
+     <pre><code class="language-python">
+  target_schema = StructType([...])  # explicit target
+
+dfs = []
+for file_path in file_list:
+    df = spark.read 
+        .schema(target_schema) 
+        .option("header", "true") 
+        .format("csv") 
+        .load(file_path)
+    dfs.append(df)
+
+# Union all — safe because all conform to same schema
+from functools import reduce
+df_final = reduce(lambda a, b: a.unionByName(b, allowMissingColumns=True), dfs)
+  </code></pre> 
+     
+ </li>
+        <li>
+ <span style="color:Violet;"><b>  For Parquet </b></span>  — schema is embedded in the file footer so wildcard reads are generally safe and reliable.
+ <ul>
+        <li>
+  Two risks remain — schema evolution where a new column appears in later files, and type conflicts where the same column has different types across files
+        </li>
+        <li>
+For evolution I enable  <span style="color:Green;"><b>  mergeSchema </b></span>  explicitly: This builds a superset schema — missing columns in older files fill as null. For type conflicts mergeSchema won't help — those need explicit schema definition and per-file validation before union.
+<pre><code class="language-python">df = spark.read 
+    .option("mergeSchema", "true") 
+    .format("parquet") 
+    .load("path/*.parquet")</code></pre>
+        </li>
+        </ul>
+        </li>
+<li>  <span style="color:Violet;"><b>  Delta</b></span>  Delta doesn't need manual file-level union — _delta_log manages all active files under a table path, so a single <code>spark.read.format("delta").load(path)</code> gives you everything. <code>unionByName</code> with reduce is only needed when merging separate Delta tables with schema differences.</li>
+        </ol>
+      `,
+        children: [],
+      },
+      {
+        q: `what does inferschema do while reading files`,
+        a: `💠By default, when Spark reads a CSV file, all columns are treated as strings.<br>
   💠inferSchema tells Spark to automatically detect column names and data types by scanning the file. Internally it does two passes — one to sample and infer types, one to actually read the data. 
   <br> 💠 The problem is it can guess wrong, it's slower, and in production pipelines schema can drift silently. In my Bronze layer I always define an explicit schema — that way if the source sends an unexpected type, the job fails loudly rather than corrupting downstream Silver and Gold tables`,
-    tip: `inferSchema is mainly used for schema-less formats like CSV and JSON, where Spark needs to determine column data types from the data itself. <br>Self-describing formats such as Parquet, ORC, Avro, and Delta already store schema metadata, so inferSchema is not required and has no meaningful effect. <br>Text files are read as a single string column, so schema inference does not apply.`,
-    children: [],
-
+        tip: `inferSchema is mainly used for schema-less formats like CSV and JSON, where Spark needs to determine column data types from the data itself. <br>Self-describing formats such as Parquet, ORC, Avro, and Delta already store schema metadata, so inferSchema is not required and has no meaningful effect. <br>Text files are read as a single string column, so schema inference does not apply.`,
+        children: [],
+      },
+    ],
   },
   ////////////////////////////////////////////////////////
   {
@@ -128,6 +183,21 @@ parallelize().toDF() is the old RDD-based path. You manually create an RDD first
   <br><br>
   <code> %run /Shared/CommonFunctions --- Execute another notebook(like helper functions ).</code>`,
         tip: `they are native to databicks notebooks , noy spark`,
+        children: [],
+      },
+      {
+        q: `What is PHoton engine and uses`,
+        a: `
+<ul>
+<li>Photon is Databricks' native vectorized execution engine written in C++ that runs automatically on Databricks clusters without any code changes. 
+</li>
+<li>
+Instead of processing one row at a time through the JVM like standard Spark, Photon processes entire column batches ( using CPU SIMD instructions ) — eliminating JVM garbage collection overhead and giving significantly faster performance on scans, joins, shuffles, and aggregations.
+</li><li>
+<span style="color:red">Does it replaces JVM:  </span>It doesn't replace Spark JVM entirely — driver, Catalyst Optimizer, and scheduling remain JVM — Photon only takes over supported operators <span style="color:violet"><b> inside executors</b></span>, handing back to JVM via PhotonColumnarToRow for unsupported ops like Python UDFs, which is why we prefer native Spark functions over UDFs in production.
+</li>
+</ul>
+        `,
         children: [],
       },
 
@@ -444,10 +514,10 @@ In our project, we used <code>repartition()</code> only when we needed explicit 
         ],
 
       },
-      
-              {
- q:`Deep copy VS shallow copy`,
-        a:`
+
+      {
+        q: `Deep copy VS shallow copy`,
+        a: `
         A shallow clone creates a new transaction log but only references the source table's existing data files, making it very fast and storage-efficient. Any new inserts or updates in the clone create new data files owned by the clone, while the source remains unchanged. <br>
          A deep clone copies both the transaction log and all data files, creating a fully independent copy that's typically used for backup, migration, or disaster recovery. 
          <br> One limitation of a shallow clone is that if the source deletes shared data files through VACUUM, the shallow clone can become unreadable
@@ -457,15 +527,39 @@ recursie ctes
 DEEP CLONE customers / Shallow clone customers;
   </code></pre> 
         `,
-        children:[],
-      
+        children: [],
+
 
       },
 
     ],
   },
-    ////////////////////////////////////////////////////////////////////////////////
-
+  ////////////////////////////////////////////////////////////////////////////////
+  {
+    cat: `Optimizations`,
+    q: `Slow running`,
+    a: ``,
+    children: [
+      {
+        q: `Slow Delta table Reads`,
+        a: ` 
+If reading a Delta table is taking longer than expected, I first check the physical plan and Spark UI or Databricks Query Profile rather than immediately changing the cluster.        <ul>
+        <li>
+In the  <span style="color:Violet;"><b>  physical plan </b></span>  , I check whether partition pruning, predicate pushdown, and column pruning are happening, so we're not scanning unnecessary data
+        </li>
+        <li>
+In the <span style="color:Violet;"><b>  Query Profile or Spark UI</b></span>  , I check bytes and files read versus pruned, number of partitions read, and scan duration.
+        </li>
+<li>Based on what I find, I optimize accordingly. I select only required columns, apply filters as early as possible, and make sure queries use appropriate partition filters. If there are too many small files, I use OPTIMIZE for compaction. For frequently filtered columns, depending on the table design, I consider Z-ORDER or liquid clustering to improve data skipping.
+</li>
+<li>If reads are optimized but it's still slow, I check shuffles, skew, and spills before considering more compute
+</li>
+        </ul>
+        `,
+        children: [],
+      },
+    ],
+  },
   {
     cat: `Optimizations`,
     q: `steps for SHuffle/join Optimization`,
@@ -527,7 +621,7 @@ DEEP CLONE customers / Shallow clone customers;
   `,
     children: []
   },
-    ////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
 
   {
     cat: `Optimizations`,
@@ -682,12 +776,54 @@ salted_key dropped — clean output.
     ],
 
   },
-    ////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
 
   {
     cat: `Optimizations`,
     q: `--- How would you optimize a slow-running query? `,
     a: `  `,
     children: [],
+  },
+  {
+    cat: `Differences`,
+    q: `Differences`,
+    answer: ``,
+    children: [
+      {
+        q: `GroupBy VS Window`,
+        a: `
+        <ul>
+        <li>
+         <span style="color:Violet;"><b>  GroupBy</b></span> Aggregates rows into groups — one output row per group. Individual row detail is lost. used for summaries 
+        </li>
+        <li>
+         <span style="color:Violet;"><b>  WIndow functions</b></span>  compute across rows without collapsing them. result added as a new column. Used when you need aggregation alongside row detail.
+        </li>
+        </ul>`,
+        children: [
+          {
+            q: `performance`,
+            a: `
+ <span style="color:Orange;"><b>  Window</b></span> Window functions 	Shuffle → sort per partition O(n log n) → keep ordered state in memory, sort cost, higher memory, higher spill risk at scale — but avoid an extra join shuffle if full row is req , since it already holds full row. <br>
+ <span style="color:Violet;"><b>  GroupBy</b></span> GROUP BY Shuffle → build hash map O(n) → no sorting lower memory — but needs a join back to the full table to retrieve full row detail, adding one extra shuffle <br>
+ <b>EXample</b>: For dedup and top-N with full row detail I default to ROW_NUMBER window function — cleaner, no extra join. But on 100M+ row tables where sort overhead causes memory pressure or spill, GROUP BY with a join back to the full table scales better — hash aggregation is O(n) vs window sort O(n log n), and one extra shuffle is cheaper than sorting millions of rows per partition
+            `,
+            children: [],
+          },
+        ],
+      },
+      {
+        q: ` Drop Vs Delete Vs Truncate`,
+        a: `
+ <span style="color:Violet;"><b>  Delete: </b></span>  DML operation; removes rows matching WHERE condition or all if no condition. Slower on large tables — scans rows, rewrites affected files, logs every change. In Delta, fully transactional via _delta_log — time travel preserved. <br>
+  <span style="color:Violet;"><b>  Truncate: </b></span> metadata operation; ; removes all rows without WHERE. Fastest for clearing all data — deallocates storage rather than processing rows individually. In Delta, transactional — old files de-referenced in _delta_log, time travel preserved until VACUUM.
+<br>
+   <span style="color:Violet;"><b> Drop: </b></span> Metadata Ops;  removes entire table — data, structure, metadata. Fast — removes storage references, not individual rows. Managed tables lose data permanently. External tables lose metastore entry, data files stay on ADLS. No recovery — _delta_log gone.
+        `,
+        children: [],
+      },
+    ],
+
+
   },
 ]

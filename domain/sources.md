@@ -87,6 +87,11 @@ We build a data pipeline for a US healthcare client on Azure Databricks. We pull
 - Source-aligned cleaning only — no business logic here (that's Gold)
 
 ---
+bronzt to silver reads
+- there is a landing zone and archive zone.
+- We read bronze data => Move parquet files of prev run in Lnding zone to archive => Overwrite landing with current run data.
+- in silver it reads landing folder and checks schema etc,..
+---
 
 ## Transactional Tables (MERGE Pattern)
 

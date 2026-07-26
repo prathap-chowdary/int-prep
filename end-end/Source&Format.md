@@ -3,7 +3,6 @@ layout: default
 title: Sources
 permalink: /datasources&formats/
 ---
-
 # Sources, File Formats & Ingetion — Notes
 
 ---
@@ -200,7 +199,7 @@ decimal(10,2) to decimal(20,4)
 
 ```python
 # Reads all CSV files in the folder
-spark.read.format("csv").load("/landing/")
+spark.read.format("csv").load("/dilanding/")
 
 # Reads only claims files
 spark.read.parquet("/landing/claims_*.parquet")
@@ -371,6 +370,34 @@ Hidden folder inside every Delta table. Stores transaction log and metadata — 
 **Why `_delta_log` needed if data is already in Parquet?**
 Parquet stores only data. `_delta_log` stores metadata, transaction history, schema, and file-level changes.
 
+---
+
+### Time travel
+
+- Delta Lake lets you query or restore any historical table state using a version number or timestamp — it replays _delta_log up to that point. Time travel doesn't store multiple full copies — Delta stores metadata only and reuses the same immutable Parquet files
+  - The only pitfall is VACUUM — once it runs past the retention window (default 7 days), historical files are permanently gone and time travel beyond that point is lost.
+
+#### Restore options
+
+```sql
+-- 1. RESTORE — production rollback
+RESTORE TABLE my_table TO VERSION AS OF 2
+-- Metadata-only, no file rewrites, fast. Creates new version. Keeps full history.
+-- Use for: production rollbacks
+
+-- 2. CREATE OR REPLACE AS SELECT — manual fix
+CREATE OR REPLACE TABLE my_clone AS SELECT * FROM my_table@v1
+-- Physically rewrites data. Starts fresh — loses history.
+-- Use for: partial or filtered restores
+
+-- 3. DEEP CLONE — safe testing/debugging
+DEEP CLONE mv_table VERSION AS OF 5
+-- Fully independent copy with its own log. Keeps history separately.
+-- Use for: safe testing or debugging before rollback
+```
+
+---
+
 ### To read current STATE:
 
 Delta checks the _delta_log folder instead of directly scanning Parquet files. It loads the latest checkpoint and then reads any newer JSON commit files to reconstruct the latest table snapshot, including the schema and active data files. Using metadata and file statistics, Spark applies partition pruning, predicate pushdown, and column pruning to eliminate unnecessary data. Finally, it reads only the required Parquet files and returns the DataFrame, making Delta reads much more efficient than scanning all files
@@ -414,7 +441,6 @@ Read only required Parquet files → Return DataFrame
 ## Snapshot Isolation:
 
 - A mechanism where every transaction reads a consistent snapshot of the table conflicts are fetched at write time
-- .
 
 ---
 
@@ -604,3 +630,20 @@ Auto Loader maintains a checkpoint with metadata of processed files. On each run
 | Incremental        | Batch           | Append         | Immutable event/log data (Bronze)         |
 | Incremental        | Batch           | Merge          | Mutable tables with updates (Silver/Gold) |
 | CDC                | Streaming/Batch | Merge          | Apply inserts, updates, deletes           |
+
+---
+
+## Spark plan analysis
+
+
+| Check                       | What it means                                                  | Where to see             |
+| ----------------------------- | ---------------------------------------------------------------- | -------------------------- |
+| **PartitionFilters**        | Only required partitions are scanned →**partition pruning**   | EXPLAIN / Physical Plan  |
+| **Pushed/Required Filters** | Filters are applied during/near scan → reduces rows read      | EXPLAIN / Physical Plan  |
+| **ReadSchema**              | Only required columns are read →**column pruning**            | EXPLAIN / Physical Plan  |
+| **Join Type**               | Shows how Spark performs the join (Broadcast, SortMerge, etc.) | EXPLAIN / Physical Plan  |
+| **Exchange**                | Data is redistributed between executors →**shuffle**          | EXPLAIN / Physical Plan  |
+| **Bytes/Files Pruned**      | Amount of unnecessary data/files skipped                       | Query Profile / Spark UI |
+| **Shuffle Read/Write**      | Actual amount of data moved during shuffle                     | Spark UI                 |
+| **Task Duration**           | Large differences between tasks can indicate**data skew**      | Spark UI                 |
+| **Spill to Disk**           | Data couldn't fit in execution memory and spilled to disk      | Spark UI                 |
