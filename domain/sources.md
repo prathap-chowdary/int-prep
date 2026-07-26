@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Sources
-permalink: /Sources/
+permalink: /tablesources/
 ---
 ## End Goal
 
