@@ -633,6 +633,47 @@ Auto Loader maintains a checkpoint with metadata of processed files. On each run
 
 ---
 
+## late Arriving data
+
+> Late-arriving data is data that belongs to an earlier business period but reaches the pipeline after that period has already been processed. We need to handle it because otherwise valid records may be missed, leading to incomplete data and incorrect downstream reporting.
+
+- For batch pipelines, First i will check if the source provides a reliable **updated_at** with a valid source data contract, I use it as the incremental watermark. This ensures that even records with an older business date are picked up when they arrive or get updated. I deduplicate the incoming data by business key, keeping the latest updated_at, and then **MERGE** into the target using the business key. The watermark is advanced only after successful processing.
+- If updated_at isn't reliable, I can use a lookback window to re-read recent data, deduplicate and MERGE it.
+  - Lookback window is decided based on prev late arriving data pattern
+- For records arriving outside that window, periodic reconciliation can identify missing data and we can backfill the affected period.
+
+```text
+                    LATE-ARRIVING DATA
+                           │
+                           ▼
+                Is updated_at reliable?
+                   /               \
+                 YES                NO
+                  │                  │
+                  ▼                  ▼
+        Watermark on updated_at   Lookback Window
+                  │                  │
+                  ▼                  ▼
+              Deduplicate         Deduplicate
+                  │                  │
+                  └────────┬─────────┘
+                           ▼
+                    MERGE into Target
+                           │
+                           ▼
+                Periodic Reconciliation
+                 (Source vs Target)
+                           │
+                    Mismatch found?
+                           │
+                          YES
+                           ▼
+                        Backfill
+                 Reprocess affected data
+```
+
+**EX** : For reconciliation of late-arriving data, you can use the business/event date to identify historical periods that may be incomplete. On 19 june 1k and 1k but 20june if source has 1k claims and e have 980 , then we need to backfill for that day (20 june)
+
 ## Spark plan analysis
 
 
