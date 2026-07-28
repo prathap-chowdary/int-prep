@@ -200,6 +200,48 @@ Instead of processing one row at a time through the JVM like standard Spark, Pho
         `,
         children: [],
       },
+      {
+        q: `WHats DLt and why not used DLT but WFs`,
+        a: `
+        Delta Live Tables (DLT) is a Databricks <b>declarative ETL framework</b> for building, orchestrating, and managing reliable ETL pipelines using SQL or PySpark.
+        <ul>
+        <li>
+        In Pytin we define datasets using <pre><code class="language-python">@dlt.table</code></pre>, and to read an upstream DLT table, we use <pre><code class="language-python"> dlt.read("table_name") or dlt.read_stream("table_name") </code></pre> for streaming data. DLT analyzes these references to automatically determine dependencies.
+        </li>
+        <li>
+        For data quality, DLT provides built-in expectations:
+
+<pre><code class="language-python"> @dlt.expect() #Logs invalid records</code>
+@dlt.expect_or_fail() #Fails the pipeline if invalid data is found
+@dlt.expect_or_drop() #Drops invalid records
+</pre>
+allowing developers to focus mainly on transformation logic
+</li><li>
+DLT also supports three dataset types:<br>
+
+Streaming Table – for continuously arriving streaming or append-only data. <br>
+Materialized View – for transformed datasets that are stored physically and refreshed automatically. <br>
+View – for intermediate logical transformations without storing data.
+</li>
+        </ul>
+        `,
+        children: [
+          {
+            q: `have you used DLT ?`,
+            a: `
+        I haven't used Delta Live Tables in production. In my project, we used Databricks Workflows for orchestration
+        <ul>
+        <li>
+        We chose Workflows over DLT because our pipeline has mixed sources — JDBC with custom watermark management, file-based CSVs, and periodic reference loads — each needing independent failure handling and retry logic
+        </li>
+        <li>
+        DLT's declarative model abstracts away exactly the control points we needed to own explicitly. For a file-first pipeline with stable schemas and no custom state management, DLT would be the stronger choic
+        </li>
+        </ul>`,
+            children: [],
+          },
+        ],
+      },
 
     ],
   },
@@ -427,6 +469,22 @@ So instead of reading 1000 files, Delta might only read 50 — still a scan, but
       We typically run OPTIMIZE along with ZORDER BY as a scheduled maintenance job on large Delta tables. OPTIMIZE compacts small files, while Z-ORDER clusters frequently queried columns, improving data skipping and overall query performance
                <pre><code class='language-sql'> OPTIMIZE claims ZORDER BY (patient_id, provider_id) 
                -- There is no standalone zorder by. Must use along with Optimize</pre></code>
+
+
+               
+<pre><code class="language-text"> 
+1. Spark UI — SQL Tab (most reliable)
+
+Go to SQL tab → your query → physical plan. Look for:
+
+FileScan delta
+PartitionFilters: [...]
+DataFilters: [claim_date = '2024-01-01']
+NumFiles: 12 (out of 1000)
+
+If NumFiles read is significantly less than total files — file skipping is working.
+ Without Z-ORDER it would read all 1000.
+</code></pre>
 `,
         children: [],
       },
@@ -563,11 +621,11 @@ In the <span style="color:Violet;"><b>  Query Profile or Spark UI</b></span>  , 
   {
     cat: `Optimizations`,
     q: `SHuffle/join  & Optimization`,
-    answer:``,
-    children:[,
-    {
-      q:`How spark choose join strategy`,
-      a:` Spark picks join strategy based on data size, configuration, and available statistics: 
+    answer: ``,
+    children: [,
+      {
+        q: `How spark choose join strategy`,
+        a: ` Spark picks join strategy based on data size, configuration, and available statistics: 
       <ul>
         <li>
                <span style="color:Violet;"><b>  Broadcast Hash Join (BHJ)  </b></span> → First Spark checks When one side is small enough to broadcast below autoBroadcastJoinThreshold (default 10MB).This will Avoids shuffling the large table and is usually the fastest option. 
@@ -596,11 +654,11 @@ WHY SMJ is default
         </ul>
       
       `,
-      children:[],
-    },
+        children: [],
+      },
       {
-      q:`how do you optimize joins/shuffle`,
-    a: `
+        q: `how do you optimize joins/shuffle`,
+        a: `
   I will start with
   <ul>
   <li>
@@ -656,9 +714,9 @@ WHY SMJ is default
   </li>
 </ul>
   `,
-    children: []
-  },
-],
+        children: []
+      },
+    ],
   },
   ////////////////////////////////////////////////////////////////////////////////
 
@@ -861,6 +919,19 @@ salted_key dropped — clean output.
         `,
         children: [],
       },
+      {
+        q: `cache vs Persistent`,
+        a: `
+        cache() and persist() are techniques for keeping intermediate computation results in memory or on disk within the Spark cluster to avoid costly recomputation and improve performance.
+<br>💠cache() : Caches the DataFrame or RDD in memory only (default storage level is MEMORY_AND_DISK for DataFrame and MEMORY_ONLY for RDD).
+<br>💠it is wrapper around persistent with default storage level for RDD and DF
+<br>💠 while persist() offers more control, allowing you to choose different storage levels like memory-only, memory-and-disk, or disk-only.
+
+        `,
+        children: [],
+      },
+
+
     ],
 
 
