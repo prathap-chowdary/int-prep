@@ -276,7 +276,7 @@ Binary format. Not natively supported by Spark — requires `spark-excel` third-
 ```python
 df = spark.read \
     .format("com.crealytics.spark.excel") \
-    .option("header", "true") \
+    .option("headerRows", "1") \
     .option("dataAddress", "'Sheet1'!A1") \
     .schema(explicit_schema) \
     .load("path/to/file.xlsx")
@@ -286,6 +286,7 @@ df = spark.read \
   - `'Sheet1'!A1` → full sheet from A1
   - `'Sheet1'!A3` → skip first 2 rows
   - `'Employees'!A14:D50` → specific range only
+- `headerRows` -> Native spark only supports headerRows with 1 explains how many first n lines are headers. If 2 then merges those 2 as header; Don't use header in Excel . No use.
 
 **Cons:** Third-party libr
 
