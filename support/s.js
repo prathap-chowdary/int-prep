@@ -1,6 +1,7 @@
 
 let active = "All";
  
+
 function renderNodes(nodes, path) {
   return nodes.map((n, i) => {
     const id = `${path}-${i}`;
@@ -9,12 +10,15 @@ function renderNodes(nodes, path) {
         <div class="node-q" onclick="event.stopPropagation();toggleNode('${id}')">↳ ${n.q}</div>
         <div class="node-a" id="node-${id}">
           ${n.a}
-          ${n.children.length ? renderNodes(n.children, id) : ''}
+          ${n.tip ? `<div class="tip-box">${n.tip}</div>` : ''}
+          ${n.children && n.children.length ? renderNodes(n.children, id) : ''}
         </div>
       </div>
     `;
   }).join('');
 }
+
+
 
 function render() {
   const tabsEl = document.getElementById('tabs');
