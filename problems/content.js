@@ -7,6 +7,8 @@ const qs = [
     children: [
       {
         q: `
+Show 5 rows without truncating
+<br>
  Select all columns except age.
 <br>
 Select distinct departments.
@@ -25,6 +27,11 @@ Add a suffix (_new) to every column.
         a: `
 
 <pre><code class="language-python">
+
+df.show(5,truncate=False)
+
+print(len(df.columns))
+
 #1)  Select all columns except age. 
 df.select([c for c in df.columns if c != "age"]) # df.drop("age")
 
@@ -179,6 +186,9 @@ df.drop("age")
 
 # 2) Drop multiple cols
 df.drop("salary", "dept", "age")
+#Dynamic list of columns: df.drop(*cols) ✅ (preferred in ETL pipelines)
+cols = ["age", "salary", "dept"]
+df.drop(*cols)
 
 # 3) remove duplicate rows
 df.dropDuplicates() # Removes rows that are identical across all columns.
@@ -225,9 +235,11 @@ df.fillna({
 <p style="color:violet">Find the total number of employees.<br>
 Find the highest/lowest/avg salary.<br>
 "How many duplicate name occurrences are there?"<br>
-duplicate employee names.
+duplicate employee names.<br>
+#5) new col with 20% of amount , 0 if not a valid amount
 
-`,
+
+</p>`,
         a: `
         
 <pre><code class="language-python">
@@ -246,22 +258,43 @@ df.select("name").count()-df.select("name").distinct().count()
 # 4) <b>Duplicate Names</b> Below name, name_count will display
 df.groupBy("name").agg(count("name").alias("name_count")).filter(col("name_count")>1).display() 
 
-
+#5) new col with 20% of amount , 0 if not a valid amount
+df.withColumn("new_amount", coalesce(expr("try_cast(amount as int)"), lit(0)) * 0.2).show()
 </code></pre>
 
 
 
         `,
 tip:`df.count() does not accept any arguments. <br>
-expr accepts only 1 statement , if multiple req use <b>selectExpr<b>
+expr accepts only 1 statement , if multiple req use <b>selectExpr</b>
 `,
         children: [],
       },
       {
         q: `
-        <p style="color:"></p>
+        <p style="color:violet">
+        Find the department with the highest average salary.<br>
+        Find departments where the average salary is greater than 70000.<br>
+        Find departments having more than 3 employees.<br>
+        Highest paid employee in each department
+        </p>
         `,
-        a: ``,
+        a: `
+        <pre><code class="language-python">
+#DEPT with highest avg sal
+x=df.groupby("dept").agg(sum("salary").alias("avg_salary")).orderBy(col("avg_salary").desc()).take(1)
+print(x[0][0],x[0][1])
+
+#Find departments where the average salary is greater than 70000.
+df.groupby("dept").agg(round(avg("salary"),2).alias("avg_salary")).filter(col("avg_salary")>70000).show()
+
+#Find departments having more than 3 employees.
+df.groupby("dept").agg(count("*").alias("counts")).filter(col("counts")>3).show()
+
+#Highest paid employee in each department
+window= Window.partitionBy("dept_id").orderBy(col("salary").desc())
+emp.withColumn("rank",rank().over(window)).filter((col("rank")==1) & (col("dept_id").isNotNull())).display()        </code></pre>
+        `,
         children: [],
       }, {
         q: ``,
@@ -280,9 +313,56 @@ expr accepts only 1 statement , if multiple req use <b>selectExpr<b>
     answer: ``,
 
     children: [
+      
       {
-        q: `	Top N / Highest / Lowest per dept`,
-        tip: `For Top N problems — always clarify with interviewer whether ties should be included. Default safe choice: DENSE_RANK.`,
+       
+      
+      }
+
+    ],
+
+  },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
+  {
+    cat: `core`,
+    q: `Core-2 joins`,
+    answer: ``,
+    children: [
+{
+  q:`<p style="color:violet">
+  Find employees whose department doesn't exist.
+  </p>`,
+  a:`<pre><code class="language-python">
+  #Find employees whose department doesn't exist.
+  emp.join(dept, "dept_id", "left") 
+   .filter(col("dept_name").isNull()) 
+   .select("emp_name") 
+   .show()
+  </code></pre>`,
+}
+
+    ],
+
+  },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
+  {
+    cat: `intermediate`,
+    q: `Intermediate Windows`,
+    answer: ``,
+    children: [
+      {
+        q:`<p style="color:violet">Running salary total order by emp_id.
+       </p>`,
+       a:`<pre><code class="language-python">
+window= Window.orderBy(col("emp_id").desc()).rowsBetween(Window.unboundedPreceding, Window.currentRow)
+df.withColumn("running",sum("salary").over(window)).display()
+       </code></pre>`,
+tip:`
+In interviews — Ask for clarifications / always state your assumption if not told: "I'll assume running total across the full table ordered by emp_id"
+<br>Running total / cumm total means we need to use rowsbetween explicitly else same date/ids may merge`,
+children:[],
+      },
+      {
+        q: `	<p style="color:violet">Top N / Highest / Lowest per dept</p>`,
+        tip: `For Top N problems — always clarify with interviewer whether ties should be included / say i am assuming this before starting problem . Default safe choice: DENSE_RANK.`,
 
         a: `
         
@@ -341,36 +421,41 @@ df.withColumn("rak",percent_rank().over(window))
           },
         ],
       },
-
+      {
+  q:`<p style="color:violet">
+  Running / moving sum/avg
+  </p>`,
+  a:`<pre><code class="language-python">
+  </code></pre>`,
+  children:[],
+}
     ],
-
-  },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
-  {
-    cat: `core`,
-    q: `Core-2`,
-    answer: ``,
-    children: [],
-
-  },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
-  {
-    cat: `intermediate`,
-    q: `intermediate-1`,
-    answer: ``,
-    children: [],
 
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
   {
     cat: `intermediate`,
     q: `intermediate-2`,
     answer: ``,
-    children: [],
+    children: [
+      {
+  q:`<p style="color:violet"></p>`,
+  a:`<pre><code class="language-python">
+  </code></pre>`,
+}
+    ],
 
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
   {
     cat: `Advanced`,
     q: `Advanced-1`,
     answer: ``,
-    children: [],
+    children: [
+      {
+  q:`<p style="color:violet"></p>`,
+  a:`<pre><code class="language-python">
+  </code></pre>`,
+}
+    ],
 
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
   {
