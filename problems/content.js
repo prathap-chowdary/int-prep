@@ -108,6 +108,7 @@ first() → Returns only the first row. There is no first(n) method.
       <th>Returns</th>
       <th>Ordered?</th>
       <th>Return Type</th>
+      <th>Ex</th>
     </tr>
   </thead>
   <tbody>
@@ -116,36 +117,44 @@ first() → Returns only the first row. There is no first(n) method.
       <td>First row</td>
       <td>❌ No</td>
       <td><code>Row</code></td>
+      <td>
+<pre><code class="language-python">  Row(emp_id=1, name='Alice', dept_id=101, salary=70000) </code></pre> </td>
     </tr>
     <tr>
-      <td><code>head()</code></td>
+      <td><code>head()/head(1)</code></td>
       <td>First row</td>
       <td>❌ No</td>
       <td><code>Row</code></td>
+        <td><pre><code class="language-python">  Row(emp_id=1, name='Alice', dept_id=101, salary=70000) </code></pre> </td>
     </tr>
     <tr>
       <td><code>head(n)</code></td>
       <td>First n rows</td>
       <td>❌ No</td>
       <td><code>List[Row]</code></td>
+        <td><pre><code class="language-python">  [Row(emp_id=1, name='Alice', dept_id=101, salary=70000),
+         Row(emp_id=2, name='Bob', dept_id=102, salary=50000)] </code></pre> </td>
     </tr>
     <tr>
       <td><code>take(n)</code></td>
       <td>First n rows</td>
       <td>❌ No</td>
       <td><code>List[Row]</code></td>
+        <td>👆</td>
     </tr>
     <tr>
       <td><code>show(n)</code></td>
       <td>Displays first n rows</td>
       <td>❌ No</td>
       <td><code>None</code></td>
+        <td>👆</td>
     </tr>
     <tr>
       <td><code>tail(n)</code></td>
       <td>Last n rows</td>
       <td>❌ No</td>
       <td><code>List[Row]</code></td>
+        <td>👆</td>
     </tr>
   </tbody>
 </table>
@@ -161,6 +170,50 @@ dropDuplicates() → Returns all columns, removing duplicates based on all colum
         `,
             children: [],
           },
+          {
+            q: ` how it works`,
+            a: `
+            take(n) / first() / head(n) — ✅ Most Efficient => Processes only what's needed (can stop early) => Returns n rows to driver
+<br>
+tail(n) — ⚠️ Expensive (processes all, returns few) => Must process the ENTIRE dataset to find the last rows => Only returns n rows to driver <br>
+collect() — ⚠️ Dangerous (processes all, returns all) => Must process the ENTIRE dataset  =>Brings ALL rows to driver memory => can crash with OutOfMemoryError on large data
+            `,
+            children: [],
+          },
+          {
+            q: `how to access single , list of rows`,
+            a: `
+            
+<pre><code class="language-python"> 
+row = emp.first()
+# Three ways to access:
+row.SALARY        # Attribute access
+row['SALARY']     # Dictionary-style
+row[0]                 # Index position
+
+#########################################################333
+rows = emp.take(3)
+
+# Loop
+for row in rows:
+    print(f"{row.name}: {row.salary}")
+# Extract column values
+all_names = [row.name for row in rows]
+# Output: ['Alice', 'Bob', 'Charlie']
+
+</code></pre>
+            `,
+            children: [],
+          },
+          {
+            q: `display vs show`,
+            a: `
+            show() — PySpark method that prints plain text table to console (default 20 rows), works anywhere.
+<br>
+display() — Databricks utility that renders interactive HTML table with sorting/filtering/charts (default 1000 rows), only in Databricks notebooks.
+            `,
+            children: [],
+          }
 
         ],
       },
@@ -221,6 +274,132 @@ df.fillna({
         `,
         children: [],
       },
+      {
+        q: `
+        <p style= "color:#569746">
+Add a constant column country='India'.<br>
+Add today's date,current timestamp.<br>
+round off to nearest 1000<br>
+Create a column showing salary in lakhs.
+ </p>
+        `,
+        a: `
+        
+<pre><code class="language-python">
+# Add a constant col , add date , ts cols
+emp.withColumn("country",lit("india")).withColumn("date",current_date()).withColumn("ts",current_timestamp()).show()
+
+# nearest 1000
+emp.withColumn("salaryed", expr("round(salary, -3)")).show()
+
+# Create a column showing salary in lakhs.
+emp.withColumn("y_sal_in_lakhs", round(col("sal") / 100000, 2)) \
+
+
+
+</code></pre>
+        `,
+        tip: `
+<ul>
+<li> for getting date and ts , use  current_timestamp() , current_date() not date()/timestamp()</li>
+<li> //(quotient) is available in python only not applicable in spark sql/ PySpark. So use division and then extract floor</li>
+<li>round(salary, -3) — the second argument is the scale. <br>
+Positive scale → rounds to decimal places → round(3.14159, 2) = 3.14<br>
+Zero → rounds to whole number<br>
+Negative scale → rounds to left of decimal point</li>
+</ul>
+
+        `,
+        children: [],
+      },
+      {
+        q: `<p style="color:violet">
+        <ul>
+        <li>Employees from HR or Finance.</li>
+        <li>Employees with salary between 60,000 and 90,000.</li>
+        <li>Employees whose salary is either 70,000 or 90,000.</li>
+        <li>Employees not in IT and salary above 70,000.</li>
+        <li>Exclude employees from (HR, Marketing).</li>
+        <li>Find employees with NULL department.</li>
+        </ul>
+        </p>`,
+        a: `<pre><code class="language-python">
+emp.filter(col("dept_id").isin("101","102")).show()
+emp.filter(col("salary").between(60000,70000) ).show()
+emp.filter(col("salary").isin(60000,70000) ).show()
+emp.filter((~col("dept_id").isin("101")) & (col("salary")>70000)).show()
+emp.filter(~col("dept_id").isin("101","102")).show()
+emp.filter(col("dept_id").isNull()).show()
+from pyspark.sql.functions import col, length
+
+# 1. Names starting with 'A'
+emp.filter(col("name").startswith("A")).show()
+emp.filter(col("name").like("A%")).show()
+
+# 2. Names ending with 'e'
+emp.filter(col("name").endswith("e")).show()
+emp.filter(col("name").like("%e")).show()
+
+# 3. Names containing 'ar'
+emp.filter(col("name").contains("ar")).show()
+emp.filter(col("name").like("%ar%")).show()
+
+# 4. Names NOT containing 'a'
+emp.filter(~col("name").contains("a")).show()
+emp.filter(~col("name").like("%a%")).show()
+
+# 5. Names with exactly 5 characters
+emp.filter(length(col("name")) == 5).show()
+emp.filter(col("name").like("_____")).show()  # 5 underscores
+
+# 6. Names beginning with a vowel
+emp.filter(col("name").rlike("^[aeiouAEIOU]")).show()
+  </code></pre>`,
+  children:[],
+      },
+      {
+        q: `<p style="color: cream">
+        # Employees who joined after 2025-03-15.<br>
+ Employees who joined before 2025-01-01..<br>
+ Employees who joined in January..<br>
+ Employees who joined in 2025..<br>
+ Employees who joined in the last 30 days..<br>
+ Employees who joined today..<br>
+Employees who joined this month.
+        </p>`,
+        a: `<pre><code class="language-python">
+
+        emp.filter(col("joining_date")>"2025-03-15").show()
+emp.filter(col("joining_date")<"2025-01-01").show()
+emp.filter(month(col("joining_date"))==1).show()
+emp.filter(year(col("joining_date"))==2025).show()
+emp.filter( col("joining_date").between(date_sub(current_date(),30),current_date())).show()
+emp.filter(col("joining_date")==current_date()).show()
+emp.filter(month(col("joining_date"))==month(current_date())).show()
+  </code></pre>`,
+  children:[],
+      },
+
+      {
+        q: `<p style="color:brown">
+        Employees not in IT and salary below 70,000.<br>
+ Employees from HR with salary outside 50,000–70,000.<br>
+ Employees whose names do not start with 'A'.<br>
+ Employees with NULL salary or NULL department.<br>
+ Employees from Finance older than 30 or salary above 90,000.<br>
+ Employees whose names contain 'a' and end with 'e'.
+        </p>`,
+        a: `<pre><code class="language-python">
+emp.filter((~col("dept_id").isin("101")) & (col("salary")<70000)).show()
+emp.filter((col("dept_id").isin("101")) & (~col("salary").between(50000,70000))).show()
+emp.filter((~col("name").startswith("A"))).show()
+emp.filter(col("salary").isNull() | col("dept_id").isNull())
+emp.filter(col("dept_id").isin("101") & ((col("salary")>90000) | (col("emp_id")>5) )).show()
+emp.filter(col("name").endswith("e") & col("name").contains("a")).show()
+  </code></pre>`,
+  children:[],
+      }
+      
     ],
 
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
@@ -265,7 +444,7 @@ df.withColumn("new_amount", coalesce(expr("try_cast(amount as int)"), lit(0)) * 
 
 
         `,
-tip:`df.count() does not accept any arguments. <br>
+        tip: `df.count() does not accept any arguments. <br>
 expr accepts only 1 statement , if multiple req use <b>selectExpr</b>
 `,
         children: [],
@@ -296,7 +475,8 @@ window= Window.partitionBy("dept_id").orderBy(col("salary").desc())
 emp.withColumn("rank",rank().over(window)).filter((col("rank")==1) & (col("dept_id").isNotNull())).display()        </code></pre>
         `,
         children: [],
-      }, {
+      },
+      {
         q: ``,
         a: ``,
         children: [],
@@ -313,10 +493,10 @@ emp.withColumn("rank",rank().over(window)).filter((col("rank")==1) & (col("dept_
     answer: ``,
 
     children: [
-      
+
       {
-       
-      
+
+
       }
 
     ],
@@ -327,18 +507,18 @@ emp.withColumn("rank",rank().over(window)).filter((col("rank")==1) & (col("dept_
     q: `Core-2 joins`,
     answer: ``,
     children: [
-{
-  q:`<p style="color:violet">
+      {
+        q: `<p style="color:violet">
   Find employees whose department doesn't exist.
   </p>`,
-  a:`<pre><code class="language-python">
+        a: `<pre><code class="language-python">
   #Find employees whose department doesn't exist.
   emp.join(dept, "dept_id", "left") 
    .filter(col("dept_name").isNull()) 
    .select("emp_name") 
    .show()
   </code></pre>`,
-}
+      }
 
     ],
 
@@ -349,16 +529,16 @@ emp.withColumn("rank",rank().over(window)).filter((col("rank")==1) & (col("dept_
     answer: ``,
     children: [
       {
-        q:`<p style="color:violet">Running salary total order by emp_id.
+        q: `<p style="color:violet">Running salary total order by emp_id.
        </p>`,
-       a:`<pre><code class="language-python">
+        a: `<pre><code class="language-python">
 window= Window.orderBy(col("emp_id").desc()).rowsBetween(Window.unboundedPreceding, Window.currentRow)
 df.withColumn("running",sum("salary").over(window)).display()
        </code></pre>`,
-tip:`
+        tip: `
 In interviews — Ask for clarifications / always state your assumption if not told: "I'll assume running total across the full table ordered by emp_id"
 <br>Running total / cumm total means we need to use rowsbetween explicitly else same date/ids may merge`,
-children:[],
+        children: [],
       },
       {
         q: `	<p style="color:violet">Top N / Highest / Lowest per dept</p>`,
@@ -422,13 +602,26 @@ df.withColumn("rak",percent_rank().over(window))
         ],
       },
       {
-  q:`<p style="color:violet">
+        q: `<p style="color:violet">
   Running / moving sum/avg
   </p>`,
-  a:`<pre><code class="language-python">
+        a: `<pre><code class="language-python">
+  </code></pre>`,
+        children: [],
+      },
+        {
+        q: `<p style="color:violet">
+        Find employees whose salary increased compared to the previous month.
+        </p>`,
+        a: `<pre><code class="language-python">
+
+        w = Window.partitionBy("emp_id").orderBy("month")
+emp.withColumn("prev_sal", lag("salary", 1).over(w)) \
+   .filter(col("salary") > col("prev_sal")) \
+   .select("emp_id", "month", "salary", "prev_sal").show()
   </code></pre>`,
   children:[],
-}
+      }
     ],
 
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
@@ -438,10 +631,11 @@ df.withColumn("rak",percent_rank().over(window))
     answer: ``,
     children: [
       {
-  q:`<p style="color:violet"></p>`,
-  a:`<pre><code class="language-python">
+        q: `<p style="color:violet"></p>`,
+        a: `<pre><code class="language-python">
   </code></pre>`,
-}
+  children:[],
+      }
     ],
 
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
@@ -451,10 +645,37 @@ df.withColumn("rak",percent_rank().over(window))
     answer: ``,
     children: [
       {
-  q:`<p style="color:violet"></p>`,
-  a:`<pre><code class="language-python">
+        q: `<p style="color:violet">
+        sal greater than dept avg
+        </p>`,
+        a: `<pre><code class="language-python">
+avg_sal= emp.groupBy("dept_id").agg(avg("salary").alias("sal_avg"))
+emp.join(avg_sal,"dept_id","inner").filter(col("salary")>col("sal_avg")).show()
+
+#alternate
+emp.withColumn("avgs",avg("salary").over(Window.partitionBy("dept_id"))).filter(col("salary")>col("avgs")).show()
+  </code></pre>
+  
+<pre><code class="language-sql">
+with avgs as (select dept_id, avg(salary) as sal_avg from emp group by dept_id)
+select dept_id,name,salary,sal_avg from emp join avgs using(dept_id) where salary>sal_avg
+</code></pre>
+  `,
+  children:[],
+      },
+        {
+        q: `<p style="color:violet">Find customers who haven't placed any orders in the last 90 days</p>`,
+        a: `<pre><code class="language-python">
+emp.alias("c").join(ord.alias("o"),
+    (col("c.cust_id") == col("o.cust_id")) & 
+    (col("o.order_date") >= current_date() - 90),
+    "left"
+).filter(col("o.cust_id").isNull()) \
+ .select("c.cust_id", "c.name").show()
+
   </code></pre>`,
-}
+  children:[],
+      }
     ],
 
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
