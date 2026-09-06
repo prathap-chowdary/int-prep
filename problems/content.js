@@ -477,6 +477,53 @@ emp.withColumn("rank",rank().over(window)).filter((col("rank")==1) & (col("dept_
         children: [],
       },
       {
+        q: `<p style="color:violet"> Create salary_category: High if salary > 80,000, otherwise Low. </p>`,
+        a: `<pre><code class="language-python">
+
+  emp.withColumn("salary_category",when(col("salary")>75000,lit("high")).otherwise("low")).show()
+
+  </code></pre>`,
+  children:[],
+      },
+      {
+        q: `<p style="color:violet"> salary 0 of null else keep as is</p>`,
+        a: `<pre><code class="language-python">
+        emp.withColumn("dept_id",when(col("dept_id").isNull(),0).otherwise(col("dept_id"))).show()
+  </code></pre>`,
+  children:[],
+      },
+      {
+        q: `<p style="color:violet"> Give 20% bonus to IT employees and 10% to everyone else.</p>`,
+        a: `<pre><code class="language-python">
+emp.withColumn("bonus",when(col("dept_id")==101,round(col("salary")*1.2,2)).otherwise(round(col("salary")*1.10,2))).show()  
+  </code></pre>`,
+  children:[],
+      },
+      {
+        q: `<p style="color:violet"> Create employee_label = name + "-" + dept.
+</p>`,
+        a: `<pre><code class="language-python">
+        emp.withColumn("emp_label",concat(col("name"),lit("_"),col("dept_id"))).show()
+  </code></pre>`,
+  children:[],
+      },
+      {
+        q: `<p style="color:violet"> Calculate employee tenure from joining date.</p>`,
+        a: `<pre><code class="language-python">
+emp.withColumn("tenure",date_diff(current_date(),col("joining_date"))).show()
+  </code></pre>`,
+  children:[],
+      },
+      {
+        q: `<p style="color:violet"> Replace negative salary values with NULL.</p>`,
+        a: `<pre><code class="language-python">
+        emp.withColumn("salary", when(col("salary") < 0, lit(None)).otherwise(col("salary")))
+  </code></pre>`,
+  tip:` lit(None) gives Null ; Not lit(Null)`,
+  children:[],
+      },
+      {
+
         q: ``,
         a: ``,
         children: [],
@@ -675,7 +722,33 @@ emp.alias("c").join(ord.alias("o"),
 
   </code></pre>`,
   children:[],
+      },
+      { 
+        q: `<p style="color:violet"> Find employees whose department average salary exceeds the company average.   </p>`,
+        a: `<pre><code class="language-python">
+Company_window=Window.rowsBetween(Window.unboundedPreceding, Window.unboundedFollowing)
+dept_window=Window.partitionBy("dept_id")
+emp.withColumn("comp_avg",avg("salary").over(Company_window)).withColumn("dept_avg",avg("salary").over(dept_window)).filter(col("dept_avg")>col("comp_avg")).show()
+
+#another verson
+comp_avg=emp.agg(round(avg("salary"),2).alias("avg_sal")).take(1)[0]["avg_sal"]
+dept_window=Window.partitionBy("dept_id")
+emp.withColumn("dept_avg",avg("salary").over(dept_window)).filter(col("dept_avg")>comp_avg).show()
+  </code></pre>
+  
+<pre><code class="language-SQL">
+select * , avg(salary) over() as comp_avg,avg(salary)  over(partition by dept_id ) as dept_avg from emp qualify comp_avg < dept_avg -- or use sub query with where comp_avg < dept_avg
+## or
+with av as (select avg(salary) as avg_sal,dept_id from emp group by dept_id) 
+select * from emp join av using(dept_id) where  avg_sal > (select avg(salary) from emp)
+</code></pre>
+  `,
+  tip:`Spark SQL — OVER() with no args is valid, engine handles it internally.<br>
+PySpark — over() method requires an explicit WindowSpec object, empty over() throws an error. It's a Python API limitation, not a Spark engine limitation.
+`,
+  children:[],
       }
+
     ],
 
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
