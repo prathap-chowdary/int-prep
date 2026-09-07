@@ -5,8 +5,13 @@ const qs = [
     q: `DataFrame Basics for awareness`,
     answer: ``,
     children: [
+
       {
-        q: `
+        q: `<p style="color:purple">Basics </p>`,
+        a: ``,
+        children: [
+          {
+            q: `
 Show 5 rows without truncating
 <br>
  Select all columns except age.
@@ -24,7 +29,7 @@ Add a prefix (emp_) to every column.
 Add a suffix (_new) to every column.
 
  `,
-        a: `
+            a: `
 
 <pre><code class="language-python">
 
@@ -52,10 +57,10 @@ df.toDF(*[ c.upper() for c in df.columns ])
 </code></pre>
 
         `,
-        children: [],
-      },
-      {
-        q: `  
+            children: [],
+          },
+          {
+            q: `  
  <p style="color:violet">
  Sort department ascending and salary descending.<br>
  display the first 10 rows.<br>
@@ -67,7 +72,7 @@ df.toDF(*[ c.upper() for c in df.columns ])
 Remove duplicates based on specific columns
  </p>
  `,
-        a: `
+            a: `
         
         <pre><code class="language-python">
 # 1) Sort department ascending and salary descending.
@@ -97,7 +102,7 @@ df.dropDuplicates()
 df.dropDuplicates(["dept", "gender"])
 
 </code> </pre>`,
-        tip: `show(n) → Displays rows in the console (used for debugging).<br>
+            tip: `show(n) → Displays rows in the console (used for debugging).<br>
 take(n) / head(n) → Returns rows to the driver as a Python list.<br>
 first() → Returns only the first row. There is no first(n) method.
 
@@ -162,27 +167,27 @@ first() → Returns only the first row. There is no first(n) method.
 distinct() → Returns only the selected columns with duplicate rows removed.<br>
 dropDuplicates() → Returns all columns, removing duplicates based on all columns or specified subset.
 `,
-        children: [
-          {
-            q: `Do first(), head(), and take() always return the same first record?`,
-            a: `
+            children: [
+              {
+                q: `Do first(), head(), and take() always return the same first record?`,
+                a: `
        NO.  A Spark DataFrame is distributed across multiple partitions, and Spark does not maintain a global row order unless you explicitly specify one. <br>This returns some row that Spark encounters first during execution, not necessarily the first row from the original source file or the same row every time.
         `,
-            children: [],
-          },
-          {
-            q: ` how it works`,
-            a: `
+                children: [],
+              },
+              {
+                q: ` how it works`,
+                a: `
             take(n) / first() / head(n) — ✅ Most Efficient => Processes only what's needed (can stop early) => Returns n rows to driver
 <br>
 tail(n) — ⚠️ Expensive (processes all, returns few) => Must process the ENTIRE dataset to find the last rows => Only returns n rows to driver <br>
 collect() — ⚠️ Dangerous (processes all, returns all) => Must process the ENTIRE dataset  =>Brings ALL rows to driver memory => can crash with OutOfMemoryError on large data
             `,
-            children: [],
-          },
-          {
-            q: `how to access single , list of rows`,
-            a: `
+                children: [],
+              },
+              {
+                q: `how to access single , list of rows`,
+                a: `
             
 <pre><code class="language-python"> 
 row = emp.first()
@@ -203,22 +208,22 @@ all_names = [row.name for row in rows]
 
 </code></pre>
             `,
-            children: [],
-          },
-          {
-            q: `display vs show`,
-            a: `
+                children: [],
+              },
+              {
+                q: `display vs show`,
+                a: `
             show() — PySpark method that prints plain text table to console (default 20 rows), works anywhere.
 <br>
 display() — Databricks utility that renders interactive HTML table with sorting/filtering/charts (default 1000 rows), only in Databricks notebooks.
             `,
-            children: [],
-          }
+                children: [],
+              }
 
-        ],
-      },
-      {
-        q: `
+            ],
+          },
+          {
+            q: `
  <p style= "color:orange">
  drop cols <br>
  drop multiple cols <br>
@@ -231,7 +236,7 @@ Remove rows if any of the specified columns are null<br>
  fill nulls if age=0; gender=NA
  </p>
  `,
-        a: `
+            a: `
 
 <pre><code class="language-python">
 # 1) drop cols
@@ -272,10 +277,10 @@ df.fillna({
 
 </code></pre>        
         `,
-        children: [],
-      },
-      {
-        q: `
+            children: [],
+          },
+          {
+            q: `
         <p style= "color:#569746">
 Add a constant column country='India'.<br>
 Add today's date,current timestamp.<br>
@@ -283,7 +288,7 @@ round off to nearest 1000<br>
 Create a column showing salary in lakhs.
  </p>
         `,
-        a: `
+            a: `
         
 <pre><code class="language-python">
 # Add a constant col , add date , ts cols
@@ -299,7 +304,7 @@ emp.withColumn("y_sal_in_lakhs", round(col("sal") / 100000, 2)) \
 
 </code></pre>
         `,
-        tip: `
+            tip: `
 <ul>
 <li> for getting date and ts , use  current_timestamp() , current_date() not date()/timestamp()</li>
 <li> //(quotient) is available in python only not applicable in spark sql/ PySpark. So use division and then extract floor</li>
@@ -310,10 +315,18 @@ Negative scale → rounds to left of decimal point</li>
 </ul>
 
         `,
-        children: [],
+            children: [],
+          },
+        ],
+
       },
       {
-        q: `<p style="color:violet">
+        q: `<p style="color:pink">Filtering</p>
+`,
+        a: ``,
+        children: [
+          {
+            q: `<p style="color:violet">
         <ul>
         <li>Employees from HR or Finance.</li>
         <li>Employees with salary between 60,000 and 90,000.</li>
@@ -323,7 +336,7 @@ Negative scale → rounds to left of decimal point</li>
         <li>Find employees with NULL department.</li>
         </ul>
         </p>`,
-        a: `<pre><code class="language-python">
+            a: `<pre><code class="language-python">
 emp.filter(col("dept_id").isin("101","102")).show()
 emp.filter(col("salary").between(60000,70000) ).show()
 emp.filter(col("salary").isin(60000,70000) ).show()
@@ -331,7 +344,68 @@ emp.filter((~col("dept_id").isin("101")) & (col("salary")>70000)).show()
 emp.filter(~col("dept_id").isin("101","102")).show()
 emp.filter(col("dept_id").isNull()).show()
 from pyspark.sql.functions import col, length
+  </code></pre>`,
+            children: [],
+          },
+          {
+            q: `<p style="color:green">
+        Employees not in IT and salary below 70,000.<br>
+ Employees from HR with salary outside 50,000–70,000.<br>
+ Employees whose names do not start with 'A'.<br>
+ Employees with NULL salary or NULL department.<br>
+ Employees from Finance older than 30 or salary above 90,000.<br>
+ Employees whose names contain 'a' and end with 'e'.
+        </p>`,
+            a: `<pre><code class="language-python">
+emp.filter((~col("dept_id").isin("101")) & (col("salary")<70000)).show()
+emp.filter((col("dept_id").isin("101")) & (~col("salary").between(50000,70000))).show()
+emp.filter((~col("name").startswith("A"))).show()
+emp.filter(col("salary").isNull() | col("dept_id").isNull())
+emp.filter(col("dept_id").isin("101") & ((col("salary")>90000) | (col("emp_id")>5) )).show()
+emp.filter(col("name").endswith("e") & col("name").contains("a")).show()
+  </code></pre>`,
+            children: [],
+          },
+          {
+            q: `<p style="color: yellow">
+        # Employees who joined after 2025-03-15.<br>
+ Employees who joined before 2025-01-01..<br>
+ Employees who joined in January..<br>
+ Employees who joined in 2025..<br>
+ Employees who joined in the last 30 days..<br>
+ Employees who joined today..<br>
+Employees who joined this month.
+        </p>`,
+            a: `<pre><code class="language-python">
 
+        emp.filter(col("joining_date")>"2025-03-15").show()
+emp.filter(col("joining_date")<"2025-01-01").show()
+emp.filter(month(col("joining_date"))==1).show()
+emp.filter(year(col("joining_date"))==2025).show()
+emp.filter( col("joining_date").between(date_sub(current_date(),30),current_date())).show()
+emp.filter(col("joining_date")==current_date()).show()
+emp.filter(month(col("joining_date"))==month(current_date())).show()
+  </code></pre>`,
+            children: [],
+          },
+
+        ],
+      },
+      {
+        q: `<p style="color:violet">Sring operations </p>`,
+        a: ``,
+        children: [
+          {
+            q: `
+  <p style="color:grey">
+  # 1. Names starting with 'A'<br>
+# 2. Names ending with 'e'<br>
+# 3. Names containing 'ar'<br># 4. Names NOT containing 'a'<br># 5. Names with exactly 5 characters <br># 6. Names beginning with a vowel
+  </p>
+  `,
+            a: `
+  
+<pre><code class="language-python"> 
 # 1. Names starting with 'A'
 emp.filter(col("name").startswith("A")).show()
 emp.filter(col("name").like("A%")).show()
@@ -354,52 +428,156 @@ emp.filter(col("name").like("_____")).show()  # 5 underscores
 
 # 6. Names beginning with a vowel
 emp.filter(col("name").rlike("^[aeiouAEIOU]")).show()
+
+</code></pre>
+  `,
+            children: [],
+          },
+          {
+            q: `<p style="color:orange">
+        use upper,lower,trim,trim,rtrim,length
+        Reverse each employee name.<br>
+        Combine city, state, and country using ", " as delimiter.<br>
+        Concatenate first/middle/last names without producing NULL when middle name is missing.<br>
+        extract first and last 4 chars<br>
+        extract domains etc<br>
+        extract month using split<br>
+        Extract order number from "ORD-2025-12345".
+        filter gmail , indian phone number , only alphabeti names
+        Convert values such as "+91 98765-43210" into "9876543210".
+        </p>`,
+            a: `<pre><code class="language-python">
+emp.withColumn("new",upper(col("name"))) # same for lower ,trim,rtrim,length
+emp.withColumn("name", reverse("name")).show()
+emp.withColumn("D",concat_ws(", ",col("name"),col("emp_id"),col("dept_id")))
+emp.withColumn("D",concat(col("active"),lit("_"),coalesce(col("name"),lit("NA")),lit("_"),col("dept_id"))).show()
+#first , last 4
+emp.withColumn("first",substring(col("name"),1,4)).withColumn("last",substring(col("name"),-4,4).show()
+emp.withColumn("first",left(col("name"),lit(4))).withColumn("last",right(col("name"),lit(4))).show()
+
+emp.withColumn("domain",regexp_extract(col("email"), r'@(\w+\.\w+)', 1)).show()
+emp.withColumn("month", split(col("joining_date"),"-")[1]).show()
+emp.withColumn("ex", regexp_extract(lit("ORD-2025-12345"), r'\w+-(\d+)-(\d+)', 2)).show()
+
+# Gmail emails
+emp.filter(col("email").like("%@gmail.com")).show()
+
+# Only alphabetic names
+emp.filter(col("name").rlike(r'^[a-zA-Z ]+$')).show()
+
+# Valid Indian phone numbers
+emp.filter(col("number").rlike(r'^\+91[6-9]\d{9}$')).show()
+
+emp.withColumn("ex", regexp_replace(lit("+91 98765-43210"), r'^\+\d+\s|-', '')).show()
+
   </code></pre>`,
-  children:[],
+            tip: `
+  substring works with - also. checks from left to right, last4 means=> -4,4  ELSE use <b>left,right both mus have a col as length so use lit for mentioning lngth else error</b>
+  <br>if starting and ending should be alphabets only use '^[a-zA-Z ]+$') missing + before $ will assume only 1 chat start and end.<br>
+  👉regexp_replace scans left to right, replacing every substring that matches the pattern with the replacement string. Using | acts as OR — multiple patterns in one call.
+  <ul><li> regexp_replace(lit("+91 98765-43210"), r'^\+\d+\s|-', '') → pattern 1 ^\+\d+\s removes +91 , pattern 2 - removes -, both in single pass.
+<li>Result: +91 98765-43210 → 9876543210</li></li></ul>
+`,
+            children: [],
+          }
+
+        ],
       },
+
       {
-        q: `<p style="color: cream">
-        # Employees who joined after 2025-03-15.<br>
- Employees who joined before 2025-01-01..<br>
- Employees who joined in January..<br>
- Employees who joined in 2025..<br>
- Employees who joined in the last 30 days..<br>
- Employees who joined today..<br>
-Employees who joined this month.
+        q: `<p style="color:pink">date and Timestamp</p>`,
+        a: ``,
+        children: [
+
+          {
+            q: `<p style="color:lime">
+        extract dayofweek,weekofyear<br>
+        filter between 2 <br>
+        Find orders placed in the current month / year<br>
+        Find records from the previous 7 days.<br>
+        Find all records from the previous calendar month.<br>
+        prev financial year
+        </p>`,
+            a: `<pre><code class="language-python">
+     emp.withColumns({"weekofyear":weekofyear(col("joining_date")),"dayofweek":dayofweek(col("joining_date"))}).show()  
+     emp.filter(col("joining_date").between("2025-01-01","2026-12-31")).show() 
+     emp.filter(year(col("joining_date"))==year(current_date())).show()
+      emp.filter(month(col("joining_date"))==month(current_date())).show()
+      emp.filter((col("joining_date")>date_sub(current_date(),7) )& (col("joining_date")<= current_date())).show()
+
+      #prev month
+      prev = add_months(current_date(), -1)
+      emp.filter(
+                  (month(col("joining_date")) == month(prev)) &
+                  (year(col("joining_date")) == year(prev))
+                ).show()
+      #Alternate
+      emp.filter(
+                  date_format(col("joining_date"), "yyyy-MM") == 
+                  date_format(add_months(current_date(), -1), "yyyy-MM")
+                ).show()
+      # prev financial year
+      from datetime import date
+
+      dt = date.today()
+      prev_year = dt.year - 2  if dt.month <= 3 else dt.year - 1
+
+      emp.filter(
+          (col("joining_date") >= lit(date(prev_year, 4, 1))) &
+          (col("joining_date") <= lit(date(prev_year + 1, 3, 31)))
+      ).show()
+  </code></pre>`,
+  tip:`we can't use current_date() inside if condiation so use python python inbuilt date`,
+            children: [],
+          },
+          {
+        q: `<p style="color:maroon">
+        Find the highest-sales month.
         </p>`,
         a: `<pre><code class="language-python">
-
-        emp.filter(col("joining_date")>"2025-03-15").show()
-emp.filter(col("joining_date")<"2025-01-01").show()
-emp.filter(month(col("joining_date"))==1).show()
-emp.filter(year(col("joining_date"))==2025).show()
-emp.filter( col("joining_date").between(date_sub(current_date(),30),current_date())).show()
-emp.filter(col("joining_date")==current_date()).show()
-emp.filter(month(col("joining_date"))==month(current_date())).show()
-  </code></pre>`,
-  children:[],
-      },
-
-      {
-        q: `<p style="color:brown">
-        Employees not in IT and salary below 70,000.<br>
- Employees from HR with salary outside 50,000–70,000.<br>
- Employees whose names do not start with 'A'.<br>
- Employees with NULL salary or NULL department.<br>
- Employees from Finance older than 30 or salary above 90,000.<br>
- Employees whose names contain 'a' and end with 'e'.
-        </p>`,
-        a: `<pre><code class="language-python">
-emp.filter((~col("dept_id").isin("101")) & (col("salary")<70000)).show()
-emp.filter((col("dept_id").isin("101")) & (~col("salary").between(50000,70000))).show()
-emp.filter((~col("name").startswith("A"))).show()
-emp.filter(col("salary").isNull() | col("dept_id").isNull())
-emp.filter(col("dept_id").isin("101") & ((col("salary")>90000) | (col("emp_id")>5) )).show()
-emp.filter(col("name").endswith("e") & col("name").contains("a")).show()
+        emp.groupBy(date_format(col("joining_date"),"yyyy-MM").alias("grouped")).agg(sum("salary").alias("sal")).orderBy(col("sal").desc()).first()[0]
   </code></pre>`,
   children:[],
       }
-      
+
+
+        ],
+      },
+      {
+        q: `<p style="color:blue">AGGregations</p>`,
+        a: ``,
+  children:[
+{
+        q: `<p style="color:skin"> COunt of non null salaries<br>
+        count of distinct depts<br>
+        Get salaries for each departmentas a array<br>
+        get unique salary<br>
+        dept having more than 2 distinct salaries
+        </p>`,
+        a: `<pre><code class="language-python">
+df.select(count("salary)).show()
+
+emp.select(countDistinct("dept_id")).show()
+emp.select("dept_id).distinct().count()
+
+emp.groupBy("dept_id").agg(collect_list("salary")).show()
+#alternate
+emp.groupBy("dept_id").agg(array_agg("salary")).show()
+
+emp.groupBy("dept_id").agg(collect_set("salary")).show()
+
+emp.groupBy("dept_id").agg(countDistinct("salary").alias("s")).filter(col("s") >2).show()
+</code></pre>`,
+tip:`df.count() / df.select("salary").count gives whole df counts including Nulls. SO either use count("salary") inside agg/select <br>
+countDistinct is not a df attribute so can't use directly like df.countDistinct() , need to use inside agg/select<br>
+array_agg(distinct salary ) is valid in sql but not in pyspark. Hence use collect_set for that.
+
+`,
+  children:[],
+      }
+
+  ],
+      },
     ],
 
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
@@ -477,27 +655,33 @@ emp.withColumn("rank",rank().over(window)).filter((col("rank")==1) & (col("dept_
         children: [],
       },
       {
-        q: `<p style="color:violet"> Create salary_category: High if salary > 80,000, otherwise Low. </p>`,
+        q: `<p style="color:violet"> Create salary_category: High if salary > 80,000, otherwise Low. <br>
+        Find records having NULL in any column.<br>
+        Depts having more than 20% null salaries</p>`,
         a: `<pre><code class="language-python">
-
   emp.withColumn("salary_category",when(col("salary")>75000,lit("high")).otherwise("low")).show()
+  #null in any col
+  cond=" or ".join([f' {c} is null' for c in df.columns])
+df.filter(expr(cond)).show()
+
+emp.groupBy("dept_id").agg((1-(count("salary")/count("*"))).alias("counts")).filter(col("counts")>0.2).show()
 
   </code></pre>`,
-  children:[],
+        children: [],
       },
       {
         q: `<p style="color:violet"> salary 0 of null else keep as is</p>`,
         a: `<pre><code class="language-python">
         emp.withColumn("dept_id",when(col("dept_id").isNull(),0).otherwise(col("dept_id"))).show()
   </code></pre>`,
-  children:[],
+        children: [],
       },
       {
         q: `<p style="color:violet"> Give 20% bonus to IT employees and 10% to everyone else.</p>`,
         a: `<pre><code class="language-python">
 emp.withColumn("bonus",when(col("dept_id")==101,round(col("salary")*1.2,2)).otherwise(round(col("salary")*1.10,2))).show()  
   </code></pre>`,
-  children:[],
+        children: [],
       },
       {
         q: `<p style="color:violet"> Create employee_label = name + "-" + dept.
@@ -505,23 +689,48 @@ emp.withColumn("bonus",when(col("dept_id")==101,round(col("salary")*1.2,2)).othe
         a: `<pre><code class="language-python">
         emp.withColumn("emp_label",concat(col("name"),lit("_"),col("dept_id"))).show()
   </code></pre>`,
-  children:[],
+        children: [],
       },
       {
         q: `<p style="color:violet"> Calculate employee tenure from joining date.</p>`,
         a: `<pre><code class="language-python">
 emp.withColumn("tenure",date_diff(current_date(),col("joining_date"))).show()
   </code></pre>`,
-  children:[],
+        children: [],
       },
       {
         q: `<p style="color:violet"> Replace negative salary values with NULL.</p>`,
         a: `<pre><code class="language-python">
         emp.withColumn("salary", when(col("salary") < 0, lit(None)).otherwise(col("salary")))
   </code></pre>`,
-  tip:` lit(None) gives Null ; Not lit(Null)`,
+        tip: ` lit(None) gives Null ; Not lit(Null)`,
+        children: [],
+      },
+      {q:`<p style="color:violet">Aggregations</p>`,
+        a:``,
+        children:[
+      {
+        q: `<p style="color:violet"> counts employees per dept earning more than 70k.
+        Calculate completed-order percentage for each customer.
+        </p>`,
+        a: `<pre><code class="language-python">
+emp.groupBy("dept_id").agg(count(when(col("salary")>70000,1).otherwise(0)).alias("counts")).show()
+emp.groupBy("dept_id") .agg( round(avg(when(col("active") == True, 1).otherwise(0)) * 100, 2)
+       .alias("completed_percentage")).show()
+  </code></pre>
+  
+<pre><code class="language-sql">
+select dept_id, count(case when salary >70000 then 1 else 0 end) as cnt from e group by 
+
+select  dept_id, round(avg(case when active =True then 1 else 0 end)*100 ,2)  as completed_percentage from e group by dept_id
+
+</code></pre>
+  `,
+
   children:[],
       },
+    ],
+  },
       {
 
         q: ``,
@@ -565,6 +774,16 @@ emp.withColumn("tenure",date_diff(current_date(),col("joining_date"))).show()
    .select("emp_name") 
    .show()
   </code></pre>`,
+      },
+      {
+        q: `<p style="color:violet">Replace missing employee salary with the average salary of that employee's department.</p>`,
+        a: `
+        
+        <pre><code class="language-SQL">
+select e.* except(salary) , coalesce( e.salary,b.sal,0) as salary from e left join (select dept_id,avg(salary) as sal from e group by dept_id) b using(dept_id)
+  </code></pre>`,
+  tip:`pyspark don't support * except in expr so need to use sql only. or calculate avg in a df and create tempviews for both then use sql`,
+  children:[],
       }
 
     ],
@@ -656,7 +875,7 @@ df.withColumn("rak",percent_rank().over(window))
   </code></pre>`,
         children: [],
       },
-        {
+      {
         q: `<p style="color:violet">
         Find employees whose salary increased compared to the previous month.
         </p>`,
@@ -666,6 +885,37 @@ df.withColumn("rak",percent_rank().over(window))
 emp.withColumn("prev_sal", lag("salary", 1).over(w)) \
    .filter(col("salary") > col("prev_sal")) \
    .select("emp_id", "month", "salary", "prev_sal").show()
+  </code></pre>`,
+        children: [],
+      },
+      {
+        q: `<p style="color:violet"> Find the first and last order date for each customer. </p>`,
+        a: `<pre><code class="language-python">
+w = Window.partitionBy("customer").orderBy("trn_date")
+df.select(
+    col("name"),
+    first("trn_date").over(w).alias("first_order"),
+    last("trn_date").over(w).alias("last_order")
+).distinct().show()
+
+#Alternate
+df.groupBy("customer", "name") 
+  .agg(
+      min("trn_date").alias("first_order"),
+      max("trn_date").alias("last_order")
+  ).show()
+  </code></pre>`,
+  children:[],
+      },
+      {
+        q: `<p style="color:violet">who bought in 2 consecutive months</p>`,
+        a: `<pre><code class="language-sql">
+with nex as (select customer , date_trunc("month",trn_date) as trn_month , 
+    date_trunc("month",lead(trn_date) over(partition by customer order by trn_date ))
+    as next_month from df)
+
+select customer  from nex group by customer 
+having sum(case when trn_month= add_months(next_month,-1) then 1 else 0 end  ) >0
   </code></pre>`,
   children:[],
       }
@@ -681,7 +931,7 @@ emp.withColumn("prev_sal", lag("salary", 1).over(w)) \
         q: `<p style="color:violet"></p>`,
         a: `<pre><code class="language-python">
   </code></pre>`,
-  children:[],
+        children: [],
       }
     ],
 
@@ -708,9 +958,9 @@ with avgs as (select dept_id, avg(salary) as sal_avg from emp group by dept_id)
 select dept_id,name,salary,sal_avg from emp join avgs using(dept_id) where salary>sal_avg
 </code></pre>
   `,
-  children:[],
+        children: [],
       },
-        {
+      {
         q: `<p style="color:violet">Find customers who haven't placed any orders in the last 90 days</p>`,
         a: `<pre><code class="language-python">
 emp.alias("c").join(ord.alias("o"),
@@ -721,9 +971,9 @@ emp.alias("c").join(ord.alias("o"),
  .select("c.cust_id", "c.name").show()
 
   </code></pre>`,
-  children:[],
+        children: [],
       },
-      { 
+      {
         q: `<p style="color:violet"> Find employees whose department average salary exceeds the company average.   </p>`,
         a: `<pre><code class="language-python">
 Company_window=Window.rowsBetween(Window.unboundedPreceding, Window.unboundedFollowing)
@@ -743,10 +993,10 @@ with av as (select avg(salary) as avg_sal,dept_id from emp group by dept_id)
 select * from emp join av using(dept_id) where  avg_sal > (select avg(salary) from emp)
 </code></pre>
   `,
-  tip:`Spark SQL — OVER() with no args is valid, engine handles it internally.<br>
+        tip: `Spark SQL — OVER() with no args is valid, engine handles it internally.<br>
 PySpark — over() method requires an explicit WindowSpec object, empty over() throws an error. It's a Python API limitation, not a Spark engine limitation.
 `,
-  children:[],
+        children: [],
       }
 
     ],
