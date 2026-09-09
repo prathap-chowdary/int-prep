@@ -63,6 +63,7 @@ df.toDF(*[ c.upper() for c in df.columns ])
             q: `  
  <p style="color:violet">
  Sort department ascending and salary descending.<br>
+ Sort by revenue with nulls first<br>
  display the first 10 rows.<br>
  Get first 10 rows as a list<br>
  Randomly sample 20% of the data.<br>
@@ -77,6 +78,10 @@ Remove duplicates based on specific columns
         <pre><code class="language-python">
 # 1) Sort department ascending and salary descending.
 df.orderBy(col("dept").asc(), col("salary").desc())
+
+#Nulls first
+df.orderBy(col("revenue").desc_nulls_first()).show()
+df.orderBy(col("revenue").desc_nulls_last()).show()
 
 # 2) FIrst 10 rows
 df.show(10)
@@ -527,18 +532,18 @@ emp.withColumn("ex", regexp_replace(lit("+91 98765-43210"), r'^\+\d+\s|-', '')).
           (col("joining_date") <= lit(date(prev_year + 1, 3, 31)))
       ).show()
   </code></pre>`,
-  tip:`we can't use current_date() inside if condiation so use python python inbuilt date`,
+            tip: `we can't use current_date() inside if condiation so use python python inbuilt date`,
             children: [],
           },
           {
-        q: `<p style="color:maroon">
+            q: `<p style="color:maroon">
         Find the highest-sales month.
         </p>`,
-        a: `<pre><code class="language-python">
+            a: `<pre><code class="language-python">
         emp.groupBy(date_format(col("joining_date"),"yyyy-MM").alias("grouped")).agg(sum("salary").alias("sal")).orderBy(col("sal").desc()).first()[0]
   </code></pre>`,
-  children:[],
-      }
+            children: [],
+          }
 
 
         ],
@@ -546,15 +551,15 @@ emp.withColumn("ex", regexp_replace(lit("+91 98765-43210"), r'^\+\d+\s|-', '')).
       {
         q: `<p style="color:blue">AGGregations</p>`,
         a: ``,
-  children:[
-{
-        q: `<p style="color:skin"> COunt of non null salaries<br>
+        children: [
+          {
+            q: `<p style="color:skin"> COunt of non null salaries<br>
         count of distinct depts<br>
         Get salaries for each departmentas a array<br>
         get unique salary<br>
         dept having more than 2 distinct salaries
         </p>`,
-        a: `<pre><code class="language-python">
+            a: `<pre><code class="language-python">
 df.select(count("salary)).show()
 
 emp.select(countDistinct("dept_id")).show()
@@ -568,16 +573,17 @@ emp.groupBy("dept_id").agg(collect_set("salary")).show()
 
 emp.groupBy("dept_id").agg(countDistinct("salary").alias("s")).filter(col("s") >2).show()
 </code></pre>`,
-tip:`df.count() / df.select("salary").count gives whole df counts including Nulls. SO either use count("salary") inside agg/select <br>
+            tip: `df.count() / df.select("salary").count gives whole df counts including Nulls. SO either use count("salary") inside agg/select <br>
 countDistinct is not a df attribute so can't use directly like df.countDistinct() , need to use inside agg/select<br>
 array_agg(distinct salary ) is valid in sql but not in pyspark. Hence use collect_set for that.
 
 `,
-  children:[],
-      }
+            children: [],
+          }
 
-  ],
+        ],
       },
+
     ],
 
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
@@ -706,17 +712,22 @@ emp.withColumn("tenure",date_diff(current_date(),col("joining_date"))).show()
         tip: ` lit(None) gives Null ; Not lit(Null)`,
         children: [],
       },
-      {q:`<p style="color:violet">Aggregations</p>`,
-        a:``,
-        children:[
       {
-        q: `<p style="color:violet"> counts employees per dept earning more than 70k.
+        q: `<p style="color:violet">Aggregations</p>`,
+        a: ``,
+        children: [
+          {
+            q: `<p style="color:violet"> counts employees per dept earning more than 70k.
         Calculate completed-order percentage for each customer.
+        Find customers who placed orders in at least 3 different months.
         </p>`,
-        a: `<pre><code class="language-python">
+            a: `<pre><code class="language-python">
 emp.groupBy("dept_id").agg(count(when(col("salary")>70000,1).otherwise(0)).alias("counts")).show()
 emp.groupBy("dept_id") .agg( round(avg(when(col("active") == True, 1).otherwise(0)) * 100, 2)
        .alias("completed_percentage")).show()
+
+emp.groupBy("dept_id").agg(countDistinct(date_format(col("joining_date"),"yyyy-MM")).alias("d")).filter(col("d")>2).show()
+
   </code></pre>
   
 <pre><code class="language-sql">
@@ -727,45 +738,71 @@ select  dept_id, round(avg(case when active =True then 1 else 0 end)*100 ,2)  as
 </code></pre>
   `,
 
-  children:[],
+            children: [],
+          },
+        ],
       },
-    ],
-  },
       {
+        q: `<p style="color:mustard">JOins</p>`,
+        a: ``,
+        children: [
+          {
+            q: `<p style="color:violet">Find departments that have at least one employee.
+        <br>Join employees to salary bands based on salary range.(salary in emp , min_sal,max_sal in salary_range tables)<br>
+        Find each employee's manager name(sametable).<br>
+        employees reporting to same manager(same table)<br>
+        Find employees earning more than their manager.
+        </p>`,
+            a: `<pre><code class="language-python">
+departments.join(employees, "dept_id","inner").select("dept_id").distinct().show()
+employees.join(
+    salary_bands,
+    employees.salary.between(salary_bands.min_sal, salary_bands.max_sal)
+).show()
+#Alternate
+employees.join(
+    salary_bands,
+    (employees["salary"] >= salary_bands["min_sal"]) &
+    (employees["salary"] <= salary_bands["max_sal"])
+)
 
+#Find each employee's manager name.
+emp.alias("e").join(emp.alias("m"),col("e.manager_id") == col("m.emp_id"),"left").select("e.name","m.name)
+
+# same manager
+emp.alias("e").join(emp.alias("m"),col("e.manager_id") == col("m.emp_id"))
+  .groupBy(col("m.emp_id"),col("m.name").alias("manager")).agg(string_agg(col("e.name")," ")).show()
+ 
+#emp sal > manager
+emp.alias("e").join(emp.alias("m"),col("e.manager_id") == col("m.emp_id"))\
+.filter(col("e.sal")>col("m.sal")).show()
+  </code></pre>`,
+            tip: `Whenever dealing with emp-manager types in same table, always alias and in joining condition always e.mngr_id=m.emp_id, if reverse case also revrse`,
+
+            children: [],
+          }
+
+        ],
+      },
+
+      {
         q: ``,
         a: ``,
         children: [],
-      }, {
-        q: ``,
-        a: ``,
-        children: [],
       },
     ],
   },
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
   {
-    cat: `core`,
-    q: `Core-1`,
-    answer: ``,
-
-    children: [
-
-      {
-
-
-      }
-
-    ],
-
-  },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
-  {
-    cat: `core`,
-    q: `Core-2 joins`,
+    cat: `intermediate`,
+    q: `intermediate joins`,
     answer: ``,
     children: [
       {
         q: `<p style="color:violet">
-  Find employees whose department doesn't exist.
+  Find employees whose department doesn't exist.(same table)<br>
+  Find employees who are managers and the number of direct reports they have./ >2 reportees(same table)
+
   </p>`,
         a: `<pre><code class="language-python">
   #Find employees whose department doesn't exist.
@@ -773,18 +810,14 @@ select  dept_id, round(avg(case when active =True then 1 else 0 end)*100 ,2)  as
    .filter(col("dept_name").isNull()) 
    .select("emp_name") 
    .show()
+
+   #reportees per manager
+   emp.alias("e").join(emp.alias("m"),col("e.manager_id") == col("m.emp_id"))\
+.groupBy(col("m.emp_id")).agg(count("*").alias("reportees")).show()
+# id reportees >n just filter reportees > n
   </code></pre>`,
       },
-      {
-        q: `<p style="color:violet">Replace missing employee salary with the average salary of that employee's department.</p>`,
-        a: `
-        
-        <pre><code class="language-SQL">
-select e.* except(salary) , coalesce( e.salary,b.sal,0) as salary from e left join (select dept_id,avg(salary) as sal from e group by dept_id) b using(dept_id)
-  </code></pre>`,
-  tip:`pyspark don't support * except in expr so need to use sql only. or calculate avg in a df and create tempviews for both then use sql`,
-  children:[],
-      }
+
 
     ],
 
@@ -808,8 +841,6 @@ In interviews — Ask for clarifications / always state your assumption if not t
       },
       {
         q: `	<p style="color:violet">Top N / Highest / Lowest per dept</p>`,
-        tip: `For Top N problems — always clarify with interviewer whether ties should be included / say i am assuming this before starting problem . Default safe choice: DENSE_RANK.`,
-
         a: `
         
 <pre><code class="language-python">
@@ -843,7 +874,7 @@ WHERE rank <= 3
 ORDER BY department, rank;
 </code></pre>
         `,
-        tip: `For Top N problems — always clarify with interviewer whether ties should be included. Default safe choice: DENSE_RANK.
+        tip: `For Top N problems — always clarify with interviewer whether ties should be included / say i am assuming this before starting problem . Default safe choice: DENSE_RANK.
         <br> Top N with percentage → e.g. top 10% instead of top 3 → use PERCENT_RANK <br>
 Top N excluding nulls → add WHERE salary IS NOT NULL before ranking<br>
  <span style="color:Violet;"><b>  ROW_NUMBER </b></span> 	No ties — assigns unique rank, arbitrary tiebreak<br>
@@ -905,7 +936,7 @@ df.groupBy("customer", "name")
       max("trn_date").alias("last_order")
   ).show()
   </code></pre>`,
-  children:[],
+        children: [],
       },
       {
         q: `<p style="color:violet">who bought in 2 consecutive months</p>`,
@@ -916,6 +947,21 @@ with nex as (select customer , date_trunc("month",trn_date) as trn_month ,
 
 select customer  from nex group by customer 
 having sum(case when trn_month= add_months(next_month,-1) then 1 else 0 end  ) >0
+  </code></pre>`,
+        children: [],
+      },
+      {
+        q: `<p style="color:violet"> Find the top 3 customers by revenue in each region (it has multiple sales per customer)</p>`,
+        a: `<pre><code class="language-python">
+
+        df = customers.join(orders, "cust_id") 
+              .groupBy("region", "cust_id") 
+              .agg(sum("amount").alias("revenue"))
+
+df.withColumn("rnk", dense_rank().over(Window.partitionBy("region").orderBy(col("revenue").desc()))) 
+  .filter(col("rnk") <= 2) 
+  .select("region", "cust_id", "revenue", "rnk") 
+  .show()
   </code></pre>`,
   children:[],
       }
@@ -938,12 +984,14 @@ having sum(case when trn_month= add_months(next_month,-1) then 1 else 0 end  ) >
   },////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// new 
   {
     cat: `Advanced`,
-    q: `Advanced-1`,
+    q: `Advanced-1 JOins`,
     answer: ``,
     children: [
       {
         q: `<p style="color:violet">
-        sal greater than dept avg
+        salary greater than department average<br>
+        Replace missing employee salary with the average salary of that employee's department.<br>
+        Find customers who haven't placed any orders in the last 90 days
         </p>`,
         a: `<pre><code class="language-python">
 avg_sal= emp.groupBy("dept_id").agg(avg("salary").alias("sal_avg"))
@@ -951,18 +999,8 @@ emp.join(avg_sal,"dept_id","inner").filter(col("salary")>col("sal_avg")).show()
 
 #alternate
 emp.withColumn("avgs",avg("salary").over(Window.partitionBy("dept_id"))).filter(col("salary")>col("avgs")).show()
-  </code></pre>
-  
-<pre><code class="language-sql">
-with avgs as (select dept_id, avg(salary) as sal_avg from emp group by dept_id)
-select dept_id,name,salary,sal_avg from emp join avgs using(dept_id) where salary>sal_avg
-</code></pre>
-  `,
-        children: [],
-      },
-      {
-        q: `<p style="color:violet">Find customers who haven't placed any orders in the last 90 days</p>`,
-        a: `<pre><code class="language-python">
+
+# 3 who haven't placed orders
 emp.alias("c").join(ord.alias("o"),
     (col("c.cust_id") == col("o.cust_id")) & 
     (col("o.order_date") >= current_date() - 90),
@@ -970,11 +1008,23 @@ emp.alias("c").join(ord.alias("o"),
 ).filter(col("o.cust_id").isNull()) \
  .select("c.cust_id", "c.name").show()
 
-  </code></pre>`,
+
+  </code></pre>
+  
+<pre><code class="language-sql">
+with avgs as (select dept_id, avg(salary) as sal_avg from emp group by dept_id)
+select dept_id,name,salary,sal_avg from emp join avgs using(dept_id) where salary>sal_avg
+
+#replace missing sal
+
+select e.* except(salary) , coalesce( e.salary,b.sal,0) as salary from e left join (select dept_id,avg(salary) as sal from e group by dept_id) b using(dept_id)
+</code></pre>
+  `,
+        tip: `pyspark don't support * except in expr so need to use sql only. or calculate avg in a df and create tempviews for both then use sql`,
         children: [],
       },
       {
-        q: `<p style="color:violet"> Find employees whose department average salary exceeds the company average.   </p>`,
+        q: `<p style="color:violet"> Find employees whose department average salary exceeds the company average(same table).   </p>`,
         a: `<pre><code class="language-python">
 Company_window=Window.rowsBetween(Window.unboundedPreceding, Window.unboundedFollowing)
 dept_window=Window.partitionBy("dept_id")
